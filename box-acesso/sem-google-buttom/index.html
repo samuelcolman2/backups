@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --brand:#F1663C;
+      --white:#FFFFFF;
+      --ok:#22c55e;
+      --danger:#ef4444;
+
+      --cantina-primary:#FD7F08;
+      --cantina-secondary:#253237;
+      --cantina-text:#FD7F08;
+      --cantina-border:#e2e8f0;
+
+      --input-border:#d1d5db;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body{
+      margin:0;
+      background:var(--cantina-secondary);
+      color:#fff;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px 12px 48px;
+    }
+
+    /* === CARD === */
+    .card{
+      background:#fff;
+      color:#111;
+      border:1px solid var(--cantina-border);
+      border-radius:16px;
+      box-shadow:0 12px 30px rgba(2,8,23,.18);
+      padding:32px 28px;
+      width:100%;
+      max-width:420px;
+      text-align:left;
+    }
+
+    h1{
+      font-size:22px;
+      font-weight:800;
+      margin:0 0 16px 0;
+      color:var(--cantina-secondary);
+    }
+
+    /* campos */
+    .fields{
+      display:grid;
+      gap:20px;
+      margin-top:10px;
+    }
+
+    .field{
+      display:grid;
+      gap:6px;
+    }
+
+    .field-topline{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+    }
+
+    .field-topline label{
+      font-size:13px;
+      font-weight:600;
+      color:var(--cantina-secondary);
+      line-height:1.2;
+    }
+
+    /* link "Esqueceu a senha?" */
+    .forgot-wrapper{
+      text-align:right;
+      margin-top:4px;
+    }
+
+    .link-muted{
+      background:none;
+      border:none;
+      padding:0;
+      font-size:12px;
+      font-weight:600;
+      line-height:1.2;
+      color:#2563eb;
+      text-decoration:none;
+      cursor:pointer;
+    }
+    .link-muted:hover{ text-decoration:underline; }
+
+    /* inputs */
+    .field input{
+      width:100%;
+      padding:12px;
+      border-radius:10px;
+      border:1px solid var(--input-border);
+      background:#fff;
+      color:#111;
+      font-size:15px;
+      outline:none;
+      transition:border-color .2s ease, box-shadow .2s ease;
+    }
+    .field input:focus{
+      border-color:var(--cantina-primary);
+      box-shadow:0 0 0 3px rgba(253,127,8,.20);
+    }
+
+    /* senha com olhinho */
+    .password-wrapper{
+      position:relative;
+    }
+    .password-wrapper input{
+      padding-right:44px;
+    }
+    .toggle-password{
+      position:absolute;
+      top:50%;
+      right:10px;
+      transform:translateY(-50%);
+      background:none;
+      border:0;
+      padding:6px;
+      border-radius:8px;
+      line-height:0;
+      cursor:pointer;
+      color:#6b7280;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .toggle-password:focus-visible{
+      outline:2px solid var(--cantina-primary);
+      outline-offset:2px;
+    }
+    .toggle-password svg{
+      width:20px;
+      height:20px;
+    }
+
+    /* botão principal */
+    .primary-btn{
+      width:100%;
+      padding:12px 14px;
+      border:none;
+      border-radius:8px;
+      font-size:15px;
+      font-weight:700;
+      background:var(--brand);
+      color:#fff;
+      cursor:pointer;
+      transition:filter .2s ease, transform .15s ease;
+      margin-top:4px;
+    }
+    .primary-btn:hover{
+      filter:brightness(.95);
+      transform:translateY(-1px);
+    }
+
+    /* Mensagem de status */
+    .notice{
+      font-size:13px;
+      margin-top:12px;
+      color:var(--cantina-secondary);
+      min-height:18px;
+    }
+    .ok{ color:var(--ok); }
+    .err{ color:var(--danger); }
+
+    /* "Não tem conta? Crie uma aqui" */
+    .signup-hint{
+      margin-top:16px;
+      text-align:center;
+      font-size:13px;
+      color:#6b7280;
+    }
+    .signup-hint button{
+      background:none;
+      border:none;
+      padding:0;
+      font-size:13px;
+      font-weight:700;
+      color:#2563eb;
+      text-decoration:none;
+      cursor:pointer;
+    }
+    .signup-hint button:hover{
+      text-decoration:underline;
+    }
+
+    /* ===== Modal base ===== */
+    .modal-backdrop{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.6);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+      z-index:999;
+    }
+    .modal-backdrop.open{ display:flex; }
+
+    .modal{
+      width:min(520px, 100%);
+      background:#fff;
+      color:#111;
+      border-radius:14px;
+      box-shadow:0 20px 60px rgba(0,0,0,.35);
+      max-height:90vh;
+      display:flex;
+      flex-direction:column;
+    }
+    .modal header{
+      padding:18px 20px;
+      border-bottom:1px solid #e5e7eb;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .modal header h2{
+      margin:0;
+      font-size:18px;
+      font-weight:800;
+    }
+
+    .modal .close{
+      appearance:none;
+      background:none;
+      border:none;
+      cursor:pointer;
+      font-size:22px;
+      line-height:1;
+      color:var(--danger);
+      border-radius:8px;
+      padding:2px 6px;
+      transition:background .15s ease, transform .1s ease, opacity .15s ease;
+    }
+    .modal .close:hover{
+      background:rgba(239,68,68,.12);
+      transform:scale(1.05);
+    }
+    .modal .close:focus-visible{
+      outline:2px solid rgba(239,68,68,.6);
+      outline-offset:2px;
+    }
+
+    .modal .content{
+      padding:18px 20px;
+      overflow-y:auto;
+    }
+    .modal .grid{
+      display:grid;
+      gap:10px;
+    }
+    .modal .actions{
+      padding:16px 20px;
+      border-top:1px solid #e5e7eb;
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+    }
+    .modal .actions .btn{
+      padding:10px 14px;
+      border-radius:10px;
+      border:1px solid #e5e7eb;
+      cursor:pointer;
+      font-weight:700;
+      background:#fff;
+    }
+    .modal .actions .btn.primary{
+      background:var(--brand);
+      color:#fff;
+      border-color:var(--brand);
+    }
+    .modal .hint{
+      font-size:12px;
+      color:#565;
+      margin-top:2px;
+    }
+    .modal .error{
+      font-size:13px;
+      color:var(--danger);
+      min-height:18px;
+    }
+    .modal .ok-msg{
+      font-size:13px;
+      color:var(--ok);
+      min-height:18px;
+    }
+
+    /* inputs dentro do modal */
+    .modal .field input{
+      border:1px solid var(--input-border);
+      background:#fff;
+    }
+    .modal .field input:focus{
+      border-color:var(--cantina-primary);
+      box-shadow:0 0 0 3px rgba(253,127,8,.25);
+    }
+
+    @media (max-width:420px){
+      .link-muted{ font-size:12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== BOX LOGIN ===== -->
+  <main class="card" role="main">
+    <h1>Login</h1>
+
+    <div class="fields" aria-label="Login com email e senha">
+      <!-- E-mail -->
+      <div class="field">
+        <div class="field-topline">
+          <label for="emailInput">Email</label>
+        </div>
+        <input id="emailInput" type="email" inputmode="email" autocomplete="email" placeholder="seuemail@exemplo.com" required />
+      </div>
+
+      <!-- Senha -->
+      <div class="field">
+        <div class="field-topline">
+          <label for="passwordInput">Senha</label>
+        </div>
+
+        <!-- wrapper da senha + botão olho -->
+        <div class="password-wrapper">
+          <input id="passwordInput" type="password" autocomplete="current-password" placeholder="********" required />
+
+          <button id="togglePasswordBtn" class="toggle-password" type="button" aria-label="Mostrar senha" aria-pressed="false">
+            <!-- ícone olho (visível) -->
+            <svg id="iconEye" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+
+            <!-- ícone olho cortado (escondido inicialmente) -->
+            <svg id="iconEyeOff" style="display:none" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.4 18.4 0 0 1 5.06-5.94"/>
+              <path d="M9.88 9.88A3 3 0 0 0 12 15a3 3 0 0 0 2.12-5.12"/>
+              <path d="M1 1l22 22"/>
+              <path d="M14.12 14.12 20 20"/>
+              <path d="M9.88 9.88L4 4"/>
+              <path d="M22.94 11.06A18.5 18.5 0 0 0 17 6.1"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- link esqueceu senha -->
+        <div class="forgot-wrapper">
+          <button id="resetPasswordBtn" class="link-muted" type="button">
+            Esqueceu a senha?
+          </button>
+        </div>
+      </div>
+
+      <!-- Botão principal -->
+      <button id="emailSignInBtn" class="primary-btn" type="button">
+        Entrar
+      </button>
+    </div>
+
+    <!-- Mensagem de status -->
+    <div id="notice" class="notice"></div>
+
+    <!-- Criar conta -->
+    <div class="signup-hint">
+      Não tem uma conta?
+      <button id="emailSignUpBtn" type="button">Crie uma aqui</button>
+    </div>
+  </main>
+
+  <!-- ===== MODAL: Criar conta ===== -->
+  <div id="signUpModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="signUpTitle">
+      <header>
+        <h2 id="signUpTitle">Criar conta</h2>
+        <button id="signUpClose" class="close" aria-label="Fechar">×</button>
+      </header>
+      <div class="content">
+        <div class="grid">
+          <label class="field" for="signUpEmail">
+            <span class="field-topline" style="font-size:13px; font-weight:600; color:var(--cantina-secondary); line-height:1.2;">
+              E-mail
+            </span>
+            <input id="signUpEmail" type="email" inputmode="email" autocomplete="email" placeholder="email@exemplo.com" required />
+          </label>
+
+          <label class="field" for="signUpPassword">
+            <span class="field-topline" style="font-size:13px; font-weight:600; color:var(--cantina-secondary); line-height:1.2;">
+              Senha
+            </span>
+
+            <div class="password-wrapper">
+              <input id="signUpPassword" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres" required />
+              <button class="toggle-password" data-target="signUpPassword" type="button" aria-label="Mostrar senha" aria-pressed="false">
+                <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg class="icon-eye-off" style="display:none" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.4 18.4 0 0 1 5.06-5.94"/>
+                  <path d="M9.88 9.88A3 3 0 0 0 12 15a3 3 0 0 0 2.12-5.12"/>
+                  <path d="M1 1l22 22"/>
+                  <path d="M14.12 14.12 20 20"/>
+                  <path d="M9.88 9.88L4 4"/>
+                  <path d="M22.94 11.06A18.5 18.5 0 0 0 17 6.1"/>
+                </svg>
+              </button>
+            </div>
+          </label>
+
+          <label class="field" for="signUpConfirm">
+            <span class="field-topline" style="font-size:13px; font-weight:600; color:var(--cantina-secondary); line-height:1.2;">
+              Confirmar senha
+            </span>
+            <div class="password-wrapper">
+              <input id="signUpConfirm" type="password" autocomplete="new-password" placeholder="Repita a senha" required />
+              <button class="toggle-password" data-target="signUpConfirm" type="button" aria-label="Mostrar senha" aria-pressed="false">
+                <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg class="icon-eye-off" style="display:none" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.4 18.4 0 0 1 5.06-5.94"/>
+                  <path d="M9.88 9.88A3 3 0 0 0 12 15a3 3 0 0 0 2.12-5.12"/>
+                  <path d="M1 1l22 22"/>
+                  <path d="M14.12 14.12 20 20"/>
+                  <path d="M9.88 9.88L4 4"/>
+                  <path d="M22.94 11.06A18.5 18.5 0 0 0 17 6.1"/>
+                </svg>
+              </button>
+            </div>
+          </label>
+
+          <div id="signUpError" class="error"></div>
+          <div class="hint">Use um e-mail válido. Você poderá redefinir a senha depois.</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="signUpCancel" class="btn" type="button">Cancelar</button>
+        <button id="signUpCreate" class="btn primary" type="button">Criar conta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Redefinir senha ===== -->
+  <div id="resetModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+      <header>
+        <h2 id="resetTitle">Redefinir senha</h2>
+        <button id="resetClose" class="close" aria-label="Fechar">×</button>
+      </header>
+
+      <div class="content">
+        <div class="grid">
+          <label class="field" for="resetEmail">
+            <span class="field-topline" style="font-size:13px; font-weight:600; color:var(--cantina-secondary); line-height:1.2;">
+              E-mail
+            </span>
+            <input id="resetEmail" type="email" inputmode="email" autocomplete="email" placeholder="email@exemplo.com" required />
+          </label>
+
+          <div id="resetError" class="error"></div>
+          <div id="resetOk" class="ok-msg"></div>
+          <div class="hint">Enviaremos um link para você redefinir sua senha.</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="resetCancel" class="btn" type="button">Cancelar</button>
+        <button id="resetSend" class="btn primary" type="button">Enviar link</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Utilitário só pra dar feedback visual no botão
+    function setBusy(el, busy) {
+      if(!el) return;
+      el.disabled = !!busy;
+      el.style.opacity = busy ? '0.7' : '1';
+      el.style.pointerEvents = busy ? 'none' : 'auto';
+    }
+
+    // Exibir mensagens no aviso principal
+    function showMsg(text, type = '') {
+      const notice = document.getElementById('notice');
+      notice.textContent = text || '';
+      notice.className = 'notice' + (type ? ' ' + type : '');
+    }
+
+    // ===== Toggle visualização da senha =====
+    (function(){
+      const toggleBtn = document.getElementById('togglePasswordBtn');
+      const pwdInput = document.getElementById('passwordInput');
+      const iconEye = document.getElementById('iconEye');
+      const iconEyeOff = document.getElementById('iconEyeOff');
+
+      function toggleVisibility(inputEl, btnEl, eyeOnEl, eyeOffEl){
+        const isHidden = inputEl.type === 'password';
+        inputEl.type = isHidden ? 'text' : 'password';
+        btnEl.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
+        btnEl.setAttribute('aria-label', isHidden ? 'Esconder senha' : 'Mostrar senha');
+        if(eyeOnEl && eyeOffEl){
+          eyeOnEl.style.display = isHidden ? 'none' : '';
+          eyeOffEl.style.display = isHidden ? '' : 'none';
+        }
+      }
+
+      if(toggleBtn && pwdInput){
+        toggleBtn.addEventListener('click', () => {
+          toggleVisibility(pwdInput, toggleBtn, iconEye, iconEyeOff);
+        });
+      }
+
+      // Mesma lógica para os campos de senha nos modais
+      document.querySelectorAll('.toggle-password[data-target]').forEach(btn=>{
+        const targetId = btn.getAttribute('data-target');
+        const inputEl = document.getElementById(targetId);
+        if(!inputEl) return;
+
+        const eyeOnEl = btn.querySelector('.icon-eye');
+        const eyeOffEl = btn.querySelector('.icon-eye-off');
+
+        btn.addEventListener('click', ()=>{
+          toggleVisibility(inputEl, btn, eyeOnEl, eyeOffEl);
+        });
+      });
+    })();
+
+    // ===== Lógica dos modais (abrir/fechar) =====
+    (function(){
+      // Cadastro
+      const signUpModal   = document.getElementById('signUpModal');
+      const signUpOpenBtn = document.getElementById('emailSignUpBtn');
+      const signUpClose   = document.getElementById('signUpClose');
+      const signUpCancel  = document.getElementById('signUpCancel');
+      const signUpCreate  = document.getElementById('signUpCreate');
+      const signUpEmail   = document.getElementById('signUpEmail');
+      const signUpPassword= document.getElementById('signUpPassword');
+      const signUpConfirm = document.getElementById('signUpConfirm');
+      const signUpError   = document.getElementById('signUpError');
+
+      // Reset senha
+      const resetModal     = document.getElementById('resetModal');
+      const resetOpenBtn   = document.getElementById('resetPasswordBtn');
+      const resetClose     = document.getElementById('resetClose');
+      const resetCancel    = document.getElementById('resetCancel');
+      const resetSend      = document.getElementById('resetSend');
+      const resetEmail     = document.getElementById('resetEmail');
+      const resetError     = document.getElementById('resetError');
+      const resetOk        = document.getElementById('resetOk');
+
+      const emailInput     = document.getElementById('emailInput');
+      const emailSignInBtn = document.getElementById('emailSignInBtn');
+
+      // Helpers gerais
+      function openModal(modalEl){
+        modalEl.classList.add('open');
+        modalEl.setAttribute('aria-hidden','false');
+      }
+      function closeModal(modalEl){
+        modalEl.classList.remove('open');
+        modalEl.setAttribute('aria-hidden','true');
+      }
+
+      // --- Cadastro ---
+      function openSignUp(){
+        signUpError.textContent='';
+        signUpEmail.value='';
+        signUpPassword.value='';
+        signUpConfirm.value='';
+        openModal(signUpModal);
+        signUpEmail.focus();
+      }
+      function closeSignUp(){
+        closeModal(signUpModal);
+      }
+
+      function validateSignUpFields(){
+        const email = signUpEmail.value.trim();
+        const pass = signUpPassword.value;
+        const conf = signUpConfirm.value;
+        if (!email) return 'Informe um e-mail válido.';
+        if (!pass || pass.length < 6) return 'A senha deve ter pelo menos 6 caracteres.';
+        if (pass !== conf) return 'As senhas não conferem.';
+        return '';
+      }
+
+      function handleCreateAccountFake(){
+        // Esta função NÃO cria conta de verdade.
+        // Aqui você colocaria sua própria chamada de backend depois.
+        const err = validateSignUpFields();
+        if (err){
+          signUpError.textContent = err;
+          return;
+        }
+        signUpError.textContent = '';
+        showMsg('Conta criada (exemplo front-end).', 'ok');
+        closeSignUp();
+      }
+
+      // --- Reset senha ---
+      function openReset(){
+        resetOk.textContent='';
+        resetError.textContent='';
+        resetEmail.value = emailInput.value || '';
+        openModal(resetModal);
+        resetEmail.focus();
+      }
+      function closeReset(){
+        closeModal(resetModal);
+      }
+
+      function handleResetSendFake(){
+        // Esta função NÃO envia email de verdade.
+        // Aqui você colocaria sua chamada real de "esqueci a senha".
+        const email = resetEmail.value.trim();
+        resetOk.textContent='';
+        resetError.textContent='';
+        if(!email){
+          resetError.textContent = 'Informe seu e-mail.';
+          return;
+        }
+        setBusy(resetSend, true);
+        setTimeout(()=>{
+          resetOk.textContent = 'Link de redefinição enviado para ' + email + ' (exemplo front-end).';
+          setBusy(resetSend, false);
+        }, 400);
+      }
+
+      // --- Login fake ---
+      function handleEmailSignInFake(){
+        // Isso é só visual. Aqui você chamaria seu backend real.
+        const email = emailInput.value.trim();
+        const pwd   = document.getElementById('passwordInput').value;
+
+        if(!email || !pwd){
+          showMsg('Preencha e-mail e senha.', 'err');
+          return;
+        }
+        setBusy(emailSignInBtn, true);
+        setTimeout(()=>{
+          showMsg('Login simulado (front-end).', 'ok');
+          setBusy(emailSignInBtn, false);
+        }, 400);
+      }
+
+      // Eventos Cadastro
+      signUpOpenBtn.addEventListener('click', openSignUp);
+      signUpClose.addEventListener('click', closeSignUp);
+      signUpCancel.addEventListener('click', closeSignUp);
+      signUpCreate.addEventListener('click', handleCreateAccountFake);
+
+      // Fechar signup clicando fora
+      signUpModal.addEventListener('click', (e)=>{
+        if (e.target === signUpModal) closeSignUp();
+      });
+
+      // Eventos Reset senha
+      resetOpenBtn.addEventListener('click', openReset);
+      resetClose.addEventListener('click', closeReset);
+      resetCancel.addEventListener('click', closeReset);
+      resetSend.addEventListener('click', handleResetSendFake);
+
+      // Fechar reset clicando fora
+      resetModal.addEventListener('click', (e)=>{
+        if (e.target === resetModal) closeReset();
+      });
+
+      // ESC fecha modais
+      document.addEventListener('keydown', (e)=>{
+        if(e.key==='Escape'){
+          if(signUpModal.classList.contains('open')) closeSignUp();
+          if(resetModal.classList.contains('open')) closeReset();
+        }
+      });
+
+      // Login fake
+      emailSignInBtn.addEventListener('click', handleEmailSignInFake);
+    })();
+  </script>
+</body>
+</html>
