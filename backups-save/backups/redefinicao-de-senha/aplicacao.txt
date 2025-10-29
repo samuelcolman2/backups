@@ -1,0 +1,68 @@
+Criar projeto Apps Script
+
+Abra script.google.com
+
+Crie projeto novo.
+
+Cole TODO o código acima num arquivo .gs.
+
+Configurar constantes
+
+Troque DB_URL pro URL do seu Realtime Database.
+
+Troque DB_SECRET por um token válido.
+
+Melhor prática: guardar isso em PropertiesService.getScriptProperties() em vez de constante hardcoded.
+
+Dar permissões
+
+O Apps Script vai pedir permissão pra:
+
+Enviar e-mail (MailApp)
+
+Fazer requisição externa (UrlFetchApp)
+
+Publicar como Web App
+
+Deploy → New deployment → Type: Web app
+
+Defina quem pode acessar:
+
+Se for protótipo: "Anyone" ou "Anyone with the link".
+
+Isso define se o front consegue chamar sem login Google.
+
+Copie a URL gerada.
+
+Front-end
+
+Para iniciar reset:
+
+fetch(WEB_APP_URL + "?action=requestReset&email=" + encodeURIComponent(emailUsuario))
+  .then(r => r.json())
+  .then(console.log);
+
+Para confirmar troca da senha:
+
+fetch(
+  WEB_APP_URL +
+  "?action=confirmReset" +
+  "&email=" + encodeURIComponent(emailUsuario) +
+  "&code=" + encodeURIComponent(codigoDigitado) +
+  "&newPassword=" + encodeURIComponent(novaSenha)
+)
+.then(r => r.json())
+.then(console.log);
+
+Obs: isso está usando GET só pra ficar simples igual o script.
+Em produção real, o ideal é usar POST + HTTPS e não jogar senha na querystring.
+
+Login normal depois
+
+O login do seu sistema precisa pegar:
+
+email → gerar sanitizeEmail(email) → ler /users/<chave>
+
+Gerar sha256ServerSide(senhaDigitadaNoLogin) no front ou backend
+
+Comparar com passwordHash salvo no banco

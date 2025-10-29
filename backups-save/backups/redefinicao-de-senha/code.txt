@@ -1,0 +1,524 @@
+/**************************************
+ * CONFIGURAÇÃO DO BANCO (Firebase RTDB)
+ **************************************/
+
+// URL base do seu Realtime Database (sem / .json no final)
+const DB_URL = "https://SEU-PROJETO.firebaseio.com"; 
+// Segredo/token pra autenticar no RTDB REST API.
+// IMPORTANTE: em produção isso deve vir de PropertiesService, NÃO hardcoded.
+const DB_SECRET = "FIREBASE_DB_SECRET_AQUI";
+
+/**
+ * sanitizeEmail(email)
+ * Firebase RTDB não curte certos caracteres como chave de nó.
+ * Então transformamos o e-mail numa chave segura.
+ *
+ * Exemplo:
+ *   "joao.silva@example.com"
+ * v ira "joao,silva@example,com"
+ */
+function sanitizeEmail(email) {
+  return email
+    .replace(/\./g, ',')
+    .replace(/#/g, '_')
+    .replace(/\$/g, '_')
+    .replace(/\[/g, '_')
+    .replace(/\]/g, '_');
+}
+
+/**
+ * rtdbGet(path)
+ * Faz um GET no caminho do RTDB usando REST + auth.
+ * Retorna o JSON parseado ou null.
+ */
+function rtdbGet(path) {
+  const url = DB_URL + path + ".json?auth=" + encodeURIComponent(DB_SECRET);
+
+  const resp = UrlFetchApp.fetch(url, {
+    method: "get",
+    muteHttpExceptions: true
+  });
+
+  const txt = resp.getContentText();
+
+  try {
+    return JSON.parse(txt || "null");
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * rtdbPut(path, obj)
+ * PUT substitui COMPLETAMENTE aquele nó.
+ * Se você quer "merge parcial", teria que usar PATCH.
+ */
+function rtdbPut(path, obj) {
+  const url = DB_URL + path + ".json?auth=" + encodeURIComponent(DB_SECRET);
+
+  UrlFetchApp.fetch(url, {
+    method: "put",
+    contentType: "application/json",
+    payload: JSON.stringify(obj),
+    muteHttpExceptions: true
+  });
+}
+
+/**
+ * rtdbDelete(path)
+ * Remove totalmente aquele nó.
+ * Usado pra invalidar o código depois que a senha foi trocada.
+ */
+function rtdbDelete(path) {
+  const url = DB_URL + path + ".json?auth=" + encodeURIComponent(DB_SECRET);
+
+  UrlFetchApp.fetch(url, {
+    method: "delete",
+    muteHttpExceptions: true
+  });
+}
+
+/**************************************
+ * SUPORTE: GERA CÓDIGO, HASH, ETC.
+ **************************************/
+
+/**
+ * generateResetCode()
+ * Retorna um número aleatório de 6 dígitos entre 100000 e 999999.
+ * Esse é o código que o usuário recebe por e-mail.
+ */
+function generateResetCode() {
+  return Math.floor(100000 + Math.random() * 900000); // ex: 482193
+}
+
+/**
+ * sha256ServerSide(str)
+ * Gera o hash SHA-256 em HEX da nova senha, igual front pode fazer.
+ * Assim NUNCA salvamos a senha pura no banco.
+ *
+ * Utilities.computeDigest é nativo de Apps Script.
+ */
+function sha256ServerSide(str) {
+  const raw = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256,
+    str,
+    Utilities.Charset.UTF_8
+  );
+
+  // Converte array de bytes -> string hexa
+  return raw
+    .map(b => ('0' + (b & 0xff).toString(16)).slice(-2))
+    .join('');
+}
+
+/**************************************
+ * SUPORTE: E-MAIL COM O CÓDIGO
+ **************************************/
+
+/**
+ * escapeHtml_(str)
+ * Pequena proteção pra usar o código dentro de HTML sem quebrar tags.
+ */
+function escapeHtml_(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
+ * buildResetEmailHtml(code)
+ * Monta HTML bonitinho com branding e alerta de validade (10 min).
+ * Você pode ajustar visual/cores/branding da sua escola/empresa.
+ */
+function buildResetEmailHtml(code) {
+  var codeSafe = escapeHtml_(String(code));
+  var currentYear = new Date().getFullYear();
+
+  return (
+'<!doctype html>' +
+'<html lang="pt-BR">' +
+'<head>' +
+'  <meta charset="utf-8">' +
+'  <meta name="x-apple-disable-message-reformatting">' +
+'  <meta name="viewport" content="width=device-width, initial-scale=1">' +
+'  <title>Código de redefinição de senha</title>' +
+'  <span class="preheader" style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;mso-hide:all;">' +
+'    Seu código de redefinição é ' + codeSafe + ' • válido por 10 minutos' +
+'  </span>' +
+'</head>' +
+'<body style="margin:0;padding:0;background:#f5f7fb;">' +
+
+'  <center style="width:100%;background:#f5f7fb;">' +
+'    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">' +
+
+'      <tr>' +
+'        <td style="background:#253237;border-bottom:4px solid #FD7F08;">' +
+'          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:640px;margin:0 auto;">' +
+'            <tr>' +
+'              <td style="padding:20px 24px;">' +
+'                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">' +
+'                  <tr>' +
+
+'                    <td valign="middle" style="width:64px;">' +
+'                      <a href="#" style="text-decoration:none;">' +
+'                      </a>' +
+'                    </td>' +
+
+'                    <td valign="middle" style="padding-left:16px;">' +
+'                      <div style="font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-weight:800;letter-spacing:.3px;text-transform:uppercase;color:#FD7F08;font-size:20px;line-height:1.2;">' +
+'                        Redefinição de Senha' +
+'                      </div>' +
+'                      <div style="font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#cbd5e1;font-size:12px;line-height:1.4;margin-top:2px;">' +
+'                        Código de segurança' +
+'                      </div>' +
+'                    </td>' +
+
+'                    <td align="right" valign="middle" style="display:none;"></td>' +
+
+'                  </tr>' +
+'                </table>' +
+'              </td>' +
+'            </tr>' +
+'          </table>' +
+'        </td>' +
+'      </tr>' +
+
+'      <tr>' +
+'        <td>' +
+'          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:640px;margin:0 auto;">' +
+'            <tr>' +
+'              <td style="padding:24px 16px 40px;">' +
+
+'                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#ffffff;border-radius:14px;border:1px solid #e2e8f0;overflow:hidden;">' +
+
+'                  <tr>' +
+'                    <td style="padding:24px 24px 8px;border-bottom:1px solid #f1f5f9;">' +
+'                      <h2 style="margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:18px;line-height:1.3;color:#0f172a;">' +
+'                        Seu código de verificação' +
+'                      </h2>' +
+'                      <p style="margin:6px 0 0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:13px;line-height:1.4;color:#64748b;">' +
+'                        Use o código abaixo para redefinir sua senha. Ele expira em 10 minutos.' +
+'                      </p>' +
+'                    </td>' +
+'                  </tr>' +
+
+'                  <tr>' +
+'                    <td style="padding:24px 24px 8px;text-align:center;">' +
+
+'                      <div style="font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:12px;line-height:1.4;color:#334155;text-align:center;font-weight:600;margin-bottom:8px;">' +
+'                        Código de redefinição' +
+'                      </div>' +
+
+'                      <div style="display:inline-block;background:#0f172a;color:#ffffff;border-radius:12px;border:2px solid #FD7F08;padding:16px 20px;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:28px;line-height:1.2;font-weight:700;letter-spacing:2px;">' +
+                         codeSafe +
+'                      </div>' +
+
+'                      <div style="font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:12px;line-height:1.5;color:#64748b;text-align:center;margin-top:12px;">' +
+'                        Digite esse código no sistema para criar uma nova senha.' +
+'                      </div>' +
+
+'                    </td>' +
+'                  </tr>' +
+
+'                  <tr>' +
+'                    <td style="padding:24px 24px 24px;">' +
+'                      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:13px;line-height:1.5;color:#111827;">' +
+'                        <strong style="font-weight:600;color:#0f172a;display:block;margin-bottom:4px;">Não foi você?</strong>' +
+'                        Se você não solicitou a redefinição de senha, nenhuma ação é necessária. Sua conta continua segura.' +
+'                      </div>' +
+'                    </td>' +
+'                  </tr>' +
+
+'                </table>' +
+
+'              </td>' +
+'            </tr>' +
+
+'            <tr>' +
+'              <td style="padding:0 16px 32px;">' +
+'                <div style="max-width:640px;margin:0 auto;font:400 12px/1.5 Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#94a3b8;text-align:center;">' +
+'                  Este e-mail foi enviado automaticamente pelo sistema de redefinição de senha.' +
+'                </div>' +
+'              </td>' +
+'            </tr>' +
+
+'          </table>' +
+'        </td>' +
+'      </tr>' +
+
+'      <tr>' +
+'        <td style="padding:0 16px 40px;">' +
+'          <div style="max-width:640px;margin:0 auto;font:400 11px/1.6 Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#94a3b8;text-align:center;">' +
+'            © ' + currentYear + ' Sua Empresa • Segurança de Conta' +
+'          </div>' +
+'        </td>' +
+'      </tr>' +
+
+'    </table>' +
+'  </center>' +
+
+'</body>' +
+'</html>'
+  );
+}
+
+/**
+ * sendResetEmail(email, code)
+ * Envia e-mail com o código em texto puro e HTML.
+ * - plainBody: fallback se o cliente de e-mail não renderiza HTML
+ * - htmlBody: versão bonitinha
+ */
+function sendResetEmail(email, code) {
+  var subject = "Redefinição de senha";
+
+  var plainBody =
+    "Olá!\n\n" +
+    "Seu código de redefinição de senha é: " + code + "\n\n" +
+    "Use esse código no sistema para definir uma nova senha.\n" +
+    "Atenção: ele expira em 10 minutos.\n\n" +
+    "Se você não solicitou isso, ignore este e-mail.\n";
+
+  var htmlBody = buildResetEmailHtml(code);
+
+  MailApp.sendEmail({
+    to: email,
+    subject: subject,
+    body: plainBody,   // fallback texto puro
+    htmlBody: htmlBody // e-mail bonitinho
+  });
+}
+
+/**************************************
+ * SUPORTE: RESPOSTA PADRÃO (JSON/JSONP)
+ **************************************/
+
+/**
+ * sendResponse(obj, e)
+ * Devolve JSON normal OU JSONP (callback=?).
+ * Isso permite chamar direto do front-end sem CORS às vezes,
+ * usando tag <script> (padrão JSONP).
+ */
+function sendResponse(obj, e) {
+  const cb = e && e.parameter && e.parameter.callback
+    ? e.parameter.callback.trim()
+    : "";
+
+  if (cb) {
+    // JSONP: callbackName({...});
+    const body = cb + "(" + JSON.stringify(obj) + ");";
+    return ContentService
+      .createTextOutput(body)
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+
+  // JSON normal
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**************************************
+ * PASSO 1: requestReset
+ *  - Front chama com ?action=requestReset&email=...
+ *  - Backend gera código, grava no banco e manda e-mail
+ **************************************/
+
+function handleRequestReset(e) {
+  // 1. Pega e normaliza o e-mail
+  const email = (e && e.parameter && e.parameter.email)
+    ? e.parameter.email.trim().toLowerCase()
+    : "";
+
+  // 2. Validação básica
+  if (!email) {
+    return sendResponse({
+      ok: false,
+      msg: "E-mail não informado."
+    }, e);
+  }
+
+  // 3. Gera código de 6 dígitos e timestamp
+  const code = generateResetCode();
+  const now = Date.now();
+
+  // 4. Gera chave sanitizada p/ usar no caminho do RTDB
+  const key = sanitizeEmail(email);
+
+  // 5. Monta payload a ser salvo em /passwordResetRequests/<key>
+  const resetPayload = {
+    email: email,
+    code: code,
+    requestedAt: now
+  };
+
+  // 6. Salva no RTDB (PUT sobrescreve completamente aquele nó)
+  rtdbPut("/passwordResetRequests/" + key, resetPayload);
+
+  // 7. Envia e-mail para o usuário com o código
+  sendResetEmail(email, code);
+
+  // 8. Retorna pro front
+  return sendResponse({
+    ok: true,
+    msg: "Solicitação enviada! Verifique seu e-mail."
+  }, e);
+}
+
+/**************************************
+ * PASSO 2: confirmReset
+ *  - Front chama com:
+ *    ?action=confirmReset
+ *    &email=...
+ *    &code=...
+ *    &newPassword=...
+ *
+ *  - Backend valida código, expiração, força da senha
+ *  - Gera hash SHA-256 da nova senha
+ *  - Atualiza /users/<key>
+ *  - Remove /passwordResetRequests/<key> pra invalidar o código
+ **************************************/
+
+function handleConfirmReset(e) {
+  // 1. Extrai parâmetros da requisição
+  const email = (e && e.parameter && e.parameter.email)
+    ? e.parameter.email.trim().toLowerCase()
+    : "";
+
+  const codeProvidedRaw = (e && e.parameter && e.parameter.code)
+    ? e.parameter.code
+    : "";
+
+  const codeProvidedStr = String(codeProvidedRaw).trim();
+
+  const newPassword = (e && e.parameter && e.parameter.newPassword)
+    ? e.parameter.newPassword
+    : "";
+
+  // 2. Gera a mesma chave sanitizada usada lá no requestReset
+  const key = sanitizeEmail(email);
+
+  // 3. Busca no banco o pedido de reset salvo anteriormente
+  //    Esperado:
+  //    {
+  //      email: "...",
+  //      code: 123456,
+  //      requestedAt: 1730229000000
+  //    }
+  const reqData = rtdbGet("/passwordResetRequests/" + key);
+
+  // 4. Valida parâmetros mínimos
+  if (!email || !newPassword || !codeProvidedStr) {
+    return sendResponse({
+      ok: false,
+      msg: "Parâmetros faltando (email, code, newPassword)."
+    }, e);
+  }
+
+  // 5. Se não existe pedido pra esse e-mail -> código inválido
+  if (!reqData) {
+    return sendResponse({
+      ok: false,
+      msg: "Código inválido. (reqData não encontrado)"
+    }, e);
+  }
+
+  // 6. Valida se o código bate
+  const storedCodeStr = String(reqData.code || "").trim();
+  if (storedCodeStr !== codeProvidedStr) {
+    return sendResponse({
+      ok: false,
+      msg: "Código inválido. (código diferente)"
+    }, e);
+  }
+
+  // 7. Valida expiração (10 minutos = 600.000 ms)
+  const TEN_MIN = 10 * 60 * 1000;
+  const requestedAt = reqData.requestedAt || 0;
+  const now = Date.now();
+
+  if (now - requestedAt > TEN_MIN) {
+    return sendResponse({
+      ok: false,
+      msg: "Código expirado. Peça outro."
+    }, e);
+  }
+
+  // 8. Regra mínima da senha
+  if (newPassword.length < 6) {
+    return sendResponse({
+      ok: false,
+      msg: "Senha muito curta."
+    }, e);
+  }
+
+  // 9. Gera hash SHA-256 da nova senha
+  const newHash = sha256ServerSide(newPassword);
+
+  // 10. Carrega (ou inicializa) o nó do usuário no RTDB
+  const userKey = key;
+  const userNodePath = "/users/" + userKey;
+  const userNode = rtdbGet(userNodePath) || {};
+
+  // 11. Atualiza campos do usuário
+  userNode.email = email;
+  userNode.passwordHash = newHash;
+
+  // Garantias básicas (se não existiam ainda)
+  if (!userNode.displayName) {
+    userNode.displayName = email;
+  }
+  if (!userNode.createdAt) {
+    userNode.createdAt = Date.now();
+  }
+
+  // Sempre atualiza quando a senha mudou
+  userNode.passwordUpdatedAt = Date.now();
+
+  // 12. Salva de volta no RTDB
+  rtdbPut(userNodePath, userNode);
+
+  // 13. Apaga o pedido de reset pra invalidar o código
+  rtdbDelete("/passwordResetRequests/" + key);
+
+  // 14. Retorna sucesso pro front
+  return sendResponse({
+    ok: true,
+    msg: "Senha atualizada com sucesso! Já pode entrar com a nova senha."
+  }, e);
+}
+
+/**************************************
+ * doGet(e)
+ * Ponto de entrada público do Web App (GET).
+ * Roteia com base em ?action=...
+ *
+ * Exemplo de uso:
+ *   /exec?action=requestReset&email=bruno@exemplo.com
+ *   /exec?action=confirmReset&email=bruno@exemplo.com
+ *                     &code=123456
+ *                     &newPassword=MinhaSenhaNova123
+ **************************************/
+
+function doGet(e) {
+  const action = e && e.parameter && e.parameter.action
+    ? e.parameter.action
+    : "";
+
+  if (action === "requestReset") {
+    return handleRequestReset(e);
+  }
+
+  if (action === "confirmReset") {
+    return handleConfirmReset(e);
+  }
+
+  // fallback se a action é inválida
+  return sendResponse({
+    ok: false,
+    msg: "Ação inválida. Use action=requestReset ou action=confirmReset."
+  }, e);
+}

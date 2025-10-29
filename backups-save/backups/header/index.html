@@ -1,0 +1,109 @@
+<!-- ===== HEADER CANTINA (extraído) ===== -->
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --brand:#F1663C;
+    --white:#FFFFFF;
+    --ok:#22c55e;
+    --danger:#ef4444;
+
+    /* Cantina */
+    --cantina-primary:#FD7F08;
+    --cantina-secondary:#253237;
+    --cantina-text:#FD7F08;
+    --cantina-border:#e2e8f0;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body{
+    margin:0;
+    background:var(--cantina-secondary);
+    color:#fff;
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    min-height:100vh;
+    display:flex; flex-direction:column;
+  }
+
+  /* ===== Header Cantina ===== */
+  nav.cantina-nav{
+    position:sticky; top:0; z-index:50;
+    background:var(--cantina-secondary);
+    border-bottom:3px solid var(--cantina-primary);
+    color:var(--cantina-text);
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  }
+  nav.cantina-nav .cantina-container{
+    max-width:min(98vw, 1400px); margin:0 auto; padding:0 12px;
+    height:96px; display:flex; align-items:center; justify-content:space-between;
+  }
+  nav.cantina-nav a{ display:flex; align-items:center; text-decoration:none; }
+  nav.cantina-nav img{ height:64px; width:auto; }
+  nav.cantina-nav .brand{ display:flex; align-items:center; gap:12px; color:var(--cantina-text); height:100%; }
+  nav.cantina-nav .brand .divider{ width:2px; height:70%; background:var(--cantina-primary); border-radius:2px; }
+  nav.cantina-nav .brand .title{
+    font-weight:800; letter-spacing:.5px;
+    font-size:clamp(18px, 3.8vw, 32px);
+    line-height:1.15; color:var(--cantina-text);
+    text-transform:uppercase;
+  }
+  nav.cantina-nav .actions{ display:flex; gap:8px; flex-wrap:wrap; }
+  nav.cantina-nav .btn{
+    padding:10px 12px; border-radius:12px; border:1px solid var(--cantina-border);
+    background:#fff; color:#000; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease;
+    font-weight:600;
+  }
+  nav.cantina-nav .btn:hover{ transform:translateY(-1px); box-shadow:0 2px 10px rgba(2,8,23,.06); }
+  nav.cantina-nav .menu-toggle{
+    display:none; border:1px solid var(--cantina-border);
+    background:#fff; color:#000; border-radius:10px;
+    padding:8px; cursor:pointer;
+  }
+  nav.cantina-nav .menu-toggle:focus-visible,
+  nav.cantina-nav .btn:focus-visible{
+    outline:2px solid var(--cantina-primary);
+    outline-offset:2px;
+  }
+
+  /* Mobile header */
+  @media (max-width: 640px){
+    nav.cantina-nav .cantina-container{ height:72px; position:relative; }
+    nav.cantina-nav img{ height:48px; }
+    nav.cantina-nav .brand{ flex:1; min-width:0; }
+    nav.cantina-nav .menu-toggle{
+      display:inline-flex; align-items:center; justify-content:center;
+      width:40px; height:40px; padding:6px; border-radius:10px;
+    }
+    nav.cantina-nav .menu-toggle svg{ width:18px; height:18px; }
+    nav.cantina-nav .actions{
+      position:absolute; right:12px; top:calc(100% + 8px); z-index:60;
+      display:none; flex-direction:column; gap:6px;
+      background:#ffffff; border:1px solid var(--cantina-border); border-radius:12px;
+      padding:10px; width:min(78vw, 280px); box-shadow:0 12px 30px rgba(2,8,23,.18);
+    }
+    nav.cantina-nav .actions.open{ display:flex; }
+    nav.cantina-nav .actions .btn{ width:100%; justify-content:center; }
+  }
+  @media (max-width: 400px){
+    nav.cantina-nav .brand .title{ font-size:clamp(16px, 5vw, 22px); }
+  }
+</style>
+
+<!-- ===== HTML do header ===== -->
+<nav class="cantina-nav" aria-label="Barra superior">
+  <div class="cantina-container">
+    <a class="brand" href="#">
+      <img src="https://iconecolegioecurso.com.br/wp-content/uploads/2022/08/xlogo_icone_site.png.pagespeed.ic_.QgXP3GszLC.webp"
+           alt="Logo Ícone Colégio e Curso"
+           onerror="this.onerror=null;this.src='https://placehold.co/150x50/eeeeee/333333?text=Logo';">
+      <span class="divider" aria-hidden="true"></span>
+      <span class="title">Formulário de Compras</span>
+    </a>
+    <div id="menuActions" class="actions"></div>
+  </div>
+</nav>
